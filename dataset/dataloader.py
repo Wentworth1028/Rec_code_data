@@ -11,7 +11,7 @@ from torch.utils.data import Dataset
 from scipy.sparse import csr_matrix
 from tools import world
 from tools.world import cprint
-# import cppimport
+import cppimport
 
 from scipy.sparse import coo_matrix
 
@@ -291,7 +291,7 @@ class Loader(Dataset):
             ind, torch.ones(ind.shape[1]), (self.n_users + self.m_items, self.n_users + self.m_items)
         ).coalesce()  # 创建邻接矩阵的稀疏tensor；coalesce()用于对相同索引的多个值求和
         deg = torch.sparse.sum(tempg, dim=1).to_dense()  # 度向量
-        deg = torch.where(deg == 0, torch.tensor(1.0), deg)
+        deg = torch.where(deg == 0, torch.tensor(1.0), deg) # 防止除0
         muldeg = torch.pow(deg, -0.5)
 
         val = tempg.values()

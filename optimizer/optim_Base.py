@@ -23,4 +23,3 @@ class IROptimizer(ABC):
     @abstractmethod
     def save(self, path):
         return NotImplemented
-

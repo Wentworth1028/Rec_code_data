@@ -5,4 +5,5 @@
 /optimizer/__pycache__/
 /tools/__pycache__/
 /.idea/
-
+/.vscode/
+/normal_data/

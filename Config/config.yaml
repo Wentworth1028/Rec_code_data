@@ -1,0 +1,43 @@
+# nnictl create --config config.yaml --port 8080
+search_space:
+  # lr:
+  #   _type: choice
+  #   _value: [ 0.001, 0.0005, 0.0001 ]
+  dropout_rate:
+    _type: choice
+    _value: [ 0, 0.1, 0.2, 0.3, 0.4, 0.5 ]
+  weight_decay:
+    _type: choice
+    _value: [ 0, 0.0001, 0.00001, 0.000001 ]
+  # num_blocks:
+  #   _type: choice
+  #   _value: [ 1, 2 ]
+  # mask_prob:
+  #   _type: choice
+  #   _value: [ 0.1, 0.2, 0.3, 0.4, 0.5 ]
+
+# trial_command: python main.py --dataset amazon_game --model BERT4Rec --batchsize 512 --num_blocks 3
+# trial_command: python main.py --dataset steam --model SASRec
+trial_command: python main.py --dataset Amazon_Books --model SASRec
+
+# trial_command: python main.py --dataset amazon_game --model GRU4Rec --num_blocks 1
+# trial_command: python main.py --dataset Movie --model GRU4Rec --num_blocks 1
+# trial_command: python main.py --dataset Toy --model GRU4Rec --num_blocks 1
+trial_code_directory: .
+
+trialGpuNumber: 1
+
+trial_concurrency: 6
+max_trial_number: 2000
+
+tuner:
+  name: TPE
+  class_args:
+    optimize_mode: maximize
+
+training_service:
+  platform: local
+  maxTrialNumberPerGpu: 2
+  useActiveGpu: true
+  # gpuIndices: [0,1,4]
+  gpuIndices: [0,1,2]

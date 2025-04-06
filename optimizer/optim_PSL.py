@@ -2,7 +2,7 @@ from optimizer.optim_Base import IROptimizer
 from torch import nn
 import torch
 
-class SoftmaxOptimizer(IROptimizer):
+class PSLOptimizer(IROptimizer):
     def __init__(self, model, config):
         super().__init__()
 
@@ -20,14 +20,14 @@ class SoftmaxOptimizer(IROptimizer):
 
     def cal_loss(self, y_pred):
         # clip parameter
-        pos_logits = torch.exp(y_pred[:, 0] / self.temp)
-        neg_logits = torch.exp(y_pred[:, 1:] / self.temp)
+        pos_logits = y_pred[:, 0].unsqueeze(1)
+        neg_logits = y_pred[:, 1:]
 
-        neg_logits = torch.sum(neg_logits, dim=-1)
-
-
-        loss = - torch.log(pos_logits / neg_logits).mean()
-
+        activation = lambda x: torch.relu(x + 1)        
+        activation_diff = activation(0.5 * (neg_logits - pos_logits))
+        # print(activation_diff.shape)
+        
+        loss = torch.log(torch.sum(activation_diff ** self.temp, dim = -1)).mean()
         return loss
 
     def regularize(self,users_emb, pos_emb, neg_emb):
@@ -42,6 +42,7 @@ class SoftmaxOptimizer(IROptimizer):
         users_emb = embedding_user[users.long()]
         pos_emb = embedding_item[pos.long()]
         neg_emb = embedding_item[neg.long()]
+
         batch_size = users_emb.shape[0]
 
         pos_scores = torch.sum(users_emb * pos_emb, dim=1)
@@ -50,7 +51,7 @@ class SoftmaxOptimizer(IROptimizer):
 
         loss            =  self.cal_loss(y_pred)
         # emb_loss        =  self.weight_decay * self.regularize(users_emb, pos_emb, neg_emb) / batch_size
-        emb_loss = self.regularize(users_emb, pos_emb, neg_emb) / batch_size
+        emb_loss        =  self.regularize(users_emb, pos_emb, neg_emb) / batch_size
         additional_loss =  self.model.additional_loss(
                                 usr_idx = users.long(), 
                                 pos_idx = pos.long(), 
@@ -66,10 +67,14 @@ class SoftmaxOptimizer(IROptimizer):
 
         loss.backward()
 
+        # check gradient
+        for name, param in self.model.named_parameters():
+            if param.grad is not None:
+                print(name, torch.norm(param.grad).item())
+
         self.optimizer_descent.step()
         return ssm_loss.cpu().item()
     
     def save(self,path):
         all_states = self.model.state_dict()
         torch.save(obj = all_states, f = path)
-
